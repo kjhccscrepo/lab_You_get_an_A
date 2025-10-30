@@ -11,9 +11,9 @@ std::string assignment::getName() const {
     return this->myName;
 }
 float assignment::score() const {
-    float n = studentScore;
-    float d = myPerfectScore;
-    return (n / d) * 100;
+    const float n = studentScore * 100;
+    const float d = myPerfectScore;
+    return (n / d);
 }
 
 int assignment::value() {

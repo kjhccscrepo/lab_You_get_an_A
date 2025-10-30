@@ -50,6 +50,6 @@ std::string student::getFirstName() const {
     std::stringstream temp;
     temp << myName;
     std::string firstname;
-    std::getline(temp, firstname);
+    std::getline(temp, firstname, ' ');
     return firstname;
 }
