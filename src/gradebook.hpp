@@ -9,6 +9,10 @@ class gradebook {
 private:
     std::vector<student*> myStudents;
     std::vector<assignment> myAssignments;
+    int has_student(const student *student_in_question) const;
+    int has_student(const std::string &student_in_question_name) const;
+    int has_assignment(const assignment *assignment_in_question) const;
+    int has_assignment(const std::string &assignment_in_question_name) const;
     static std::string report_card_function(student *student_ptr);
     void update() const;
     void update_new_assignments() const;
@@ -20,9 +24,13 @@ public:
     std::string generate_report_card(int vector_location) const;
     std::string generate_report_card(const std::string& name) const;
     void add_assignment(const assignment &new_assignment);
-    void grade(const student *student_ptr, const assignment &target_assignment, const int &grade) const;
+    void add_assignment(const std::string name_of_assignment, const int max_points);
+    void grade(student *student_ptr, const assignment &target_assignment, const int &student_score) const;
     void grade(const std::string &name, const assignment &target_assignment, const int &grade) const;
+    void grade(const std::string &name_student, const std::string &assign_name, const int &grade_score) const;
     void add_new_student(const std::string &name, const std::string &ID);
+    std::string student_list() const;
+    std::string assignment_list() const;
     ~gradebook();
 };
 #endif
