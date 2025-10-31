@@ -9,8 +9,8 @@ private:
 public:
     explicit assignment (const std::string& name, const int &score);
     void setScore(const int &newScore);
-    std::string getName() const;
-    float score() const;
+    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] float score() const;
     int value();
     int score_raw();
 };

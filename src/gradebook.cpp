@@ -37,7 +37,7 @@ int gradebook::has_assignment(const std::string &assignment_in_question_name) co
 
 
 std::string gradebook::report_card_function(student *student_ptr) {
-    std::vector<assignment> vector_of_asingnments = student_ptr->getAssignments();
+    std::vector<assignment> vector_of_assignments = student_ptr->getAssignments();
     std::stringstream header;
     header << "ID: " << student_ptr->getID();
     header << "\t\t| Name: " << student_ptr->getStudentName();
@@ -47,16 +47,16 @@ std::string gradebook::report_card_function(student *student_ptr) {
         breaker << "- ";
     }
     std::stringstream assignments;
-    for (int i = 0; i < vector_of_asingnments.size(); i++) {
+    for (const auto & vector_of_assignment : vector_of_assignments) {
         assignments << "\n";
-        assignments << vector_of_asingnments[i].getName();
-        assignments << "\tscore: " << vector_of_asingnments[i].score() << "%";
+        assignments << vector_of_assignment.getName();
+        assignments << "\tscore: " << vector_of_assignment.score() << "%";
     }
     float total_possible = 0;
     float total_score = 0;
-    for (int i = 0; i < vector_of_asingnments.size(); i++) {
-        total_possible = total_possible + vector_of_asingnments[i].value();
-        total_score = total_score + vector_of_asingnments[i].score_raw();
+    for (auto & vector_of_assignment : vector_of_assignments) {
+        total_possible = total_possible + vector_of_assignment.value();
+        total_score = total_score + vector_of_assignment.score_raw();
     }
     total_score = total_score * 100;;
     float tots = (total_score / total_possible);
@@ -73,24 +73,24 @@ std::string gradebook::report_card_function(student *student_ptr) {
     return report.str();
 }
 void gradebook::update() const {
-    for (int s = 0; s < myStudents.size(); s++) {
-        for (int a = 0; a < myAssignments.size(); a++) {
-            if (!(myStudents[s]->is_assigned(myAssignments[a]))) {
-                myStudents[s]->newAssignment(myAssignments[a]);
+    for (const auto myStudent : myStudents) {
+        for (const auto & myAssignment : myAssignments) {
+            if (!(myStudent->is_assigned(myAssignment))) {
+                myStudent->newAssignment(myAssignment);
             }
         }
     }
 }
 void gradebook::update_new_assignments() const {
-    for (int s = 0; s < myStudents.size(); s++) {
-        if (!(myStudents[s]->is_assigned(myAssignments.back()))) {
-            myStudents[s]->newAssignment(myAssignments.back());
+    for (const auto myStudent : myStudents) {
+        if (!(myStudent->is_assigned(myAssignments.back()))) {
+            myStudent->newAssignment(myAssignments.back());
         }
     }
 }
 void gradebook::update_new_student() const {
-    for (int a = 0; a < myAssignments.size(); a++) {
-        myStudents.back()->newAssignment(myAssignments[a]);
+    for (const auto & myAssignment : myAssignments) {
+        myStudents.back()->newAssignment(myAssignment);
     }
 }
 std::string gradebook::makeLetterGrade(const float &grade) {
@@ -126,22 +126,41 @@ std::string gradebook::makeLetterGrade(const float &grade) {
 void gradebook::addStudent(student *new_student) {
     myStudents.push_back(new_student);
     update_new_student();
+    update();
 }
 std::string gradebook::generate_report_card(student *student_ptr) {
     return report_card_function(student_ptr);
 }
 std::string gradebook::generate_report_card(const int vector_location) const {
-    if (vector_location >= 0 && vector_location < myStudents.size()) {
-        return report_card_function(myStudents[vector_location]);
+    try {
+        if (vector_location >= 0 && vector_location < myStudents.size()) {
+            return report_card_function(myStudents[vector_location]);
+        }
+        throw std::invalid_argument("Out of Gradebook range");
+    }
+    catch (const std::string &error_string) {
+        std::cerr << error_string << std::endl;
+    }
+    catch (...) {
+        std::cerr << "Unknown error." << std::endl;
     }
     return "";
 }
 
 std::string gradebook::generate_report_card(const std::string& name) const {
-    for (int i = 0; i < myStudents.size(); i++) {
-        if (myStudents[i]->getStudentName() == name) {
-            return report_card_function(myStudents[i]);
+    try {
+        for (const auto myStudent : myStudents) {
+            if (myStudent->getStudentName() == name) {
+                return report_card_function(myStudent);
+            }
         }
+        throw std::invalid_argument("Student not found in Gradebook");
+    }
+    catch (const std::string &error_string) {
+        std::cerr << error_string << std::endl;
+    }
+    catch (...) {
+        std::cerr << "Unknown error." << std::endl;
     }
     return "";
 }
@@ -149,81 +168,82 @@ std::string gradebook::generate_report_card(const std::string& name) const {
 void gradebook::add_assignment(const assignment &new_assignment) {
     myAssignments.push_back(new_assignment);
     update_new_assignments();
+    update();
 }
-void gradebook::add_assignment(const std::string name_of_assignment, const int max_points) {
-    assignment new_assignment_ptr = assignment(name_of_assignment, max_points);
+void gradebook::add_assignment(const std::string &name_of_assignment, const int max_points) {
+    const auto new_assignment_ptr = assignment(name_of_assignment, max_points);
     add_assignment(new_assignment_ptr);
 }
 
 void gradebook::grade(student *student_ptr, const assignment &target_assignment, const int &student_score) const {
     try {
         if (!(has_assignment(&target_assignment))) {
-            throw ("Assignment (" + target_assignment.getName() + "), does not exist in gradebook");
+            throw std::invalid_argument("Assignment (" + target_assignment.getName() + "), does not exist in gradebook");
         }
         if (!(has_student(student_ptr))) {
-            throw ("Student (" + student_ptr->getStudentName() + "), does not exist in gradebook.");
+            throw std::invalid_argument("Student (" + student_ptr->getStudentName() + "), does not exist in gradebook.");
         }
         if (!(student_ptr->is_assigned(target_assignment))) {
-            throw ("Student (" + student_ptr->getStudentName() + "), was not assigned " + target_assignment.getName() + ".");
+            throw std::invalid_argument("Student (" + student_ptr->getStudentName() + "), was not assigned " + target_assignment.getName() + ".");
         }
         // then everything is good
         student_ptr->setGradeForAssignment(target_assignment, student_score);
     }
-    catch (std::string error_string) {
+    catch (const std::string &error_string) {
         std::cerr << error_string << std::endl;
     }
     catch (...) {
         std::cerr << "Unknown error." << std::endl;
     }
 }
-void gradebook::grade(const std::string &F_name, const assignment &target_assignment, const int &grade) const {
-    for (int s = 0; s < myStudents.size(); s++) {
-        if (myStudents[s]->getFirstName() == F_name || myStudents[s]->getStudentName() == F_name) {
-            if (myStudents[s]->is_assigned(target_assignment)) {
-                myStudents[s]->setGradeForAssignment(target_assignment, grade);
-            } else {
-                std::cerr << "\nERROR 3\n";
-                std::cerr << "Student, " << F_name << " was not assigned " << target_assignment.getName() << ".\n";
+void gradebook::grade(const std::string &F_name, const assignment &target_assignment, const int &student_score) const {
+    try {
+        for (int s = 0; s < myStudents.size(); s++) {
+            if (myStudents[s]->getFirstName() == F_name || myStudents[s]->getStudentName() == F_name) {
+                grade(myStudents[s], target_assignment, student_score);
             }
             if (s == myStudents.size() - 1) {
-                std::cerr << "\nERROR 4\n";
-                std::cerr << "Student, " << F_name << " does not exist in gradebook.";
+                throw ("Student (" + F_name + "), does not exist in gradebook.");
             }
         }
     }
-
+    catch (const std::string &error_string) {
+        std::cerr << error_string << std::endl;
+    }
+    catch (...) {
+        std::cerr << "Unknown error." << std::endl;
+    }
 }
 
-void gradebook::grade(const std::string &name_student, const std::string &assign_name, const int &grade_score) const {
-    for (int a = 0; a < myAssignments.size(); a++) {
-        if (myAssignments[a].getName() == assign_name) {
-            for (int s = 0; s < myStudents.size(); s++) {
-                if (myStudents[s]->getStudentName() == name_student || myStudents[s]->getFirstName() == assign_name) {
-                    grade(name_student, myAssignments[a], grade_score);
-                }
-                if (s == myStudents.size() - 1) {
-                    std::cerr << "\nERROR 5\n";
-                    std::cerr << "Student, " << name_student << " does not exist in gradebook.";
-                }
+void gradebook::grade(const std::string &name_student, const std::string &target_assignment_name, const int &student_score) const {
+    try {
+        for (int a = 0; a < myAssignments.size(); a++) {
+            if (myAssignments[a].getName() == target_assignment_name) {
+                grade(name_student, myAssignments[a], student_score);
+            }
+            if (a == myAssignments.size() - 1) {
+                throw ("Assignment (" + target_assignment_name + "), does not exist in gradebook.");
             }
         }
-        if (a == myAssignments.size() - 1) {
-            std::cerr << "\nERROR 6\n";
-            std::cerr << "Assignment, " << assign_name << " does not exist in gradebook.";
-        }
+    }
+    catch (const std::string &error_string) {
+        std::cerr << error_string << std::endl;
+    }
+    catch (...) {
+        std::cerr << "Unknown error." << std::endl;
     }
 }
 
 void gradebook::add_new_student(const std::string &name, const std::string &ID) {
-    auto new_student = new student(name, ID);
+    const auto new_student = new student(name, ID);
     myStudents.push_back(new_student);
 }
 
 std::string gradebook::student_list() const {
     std::stringstream list_studs;
     list_studs << "Students: ";
-    for (int i = 0; i < myStudents.size(); i++) {
-        list_studs << myStudents[i]->getStudentName() << ", ";
+    for (const auto myStudent : myStudents) {
+        list_studs << myStudent->getStudentName() << ", ";
     }
     list_studs << "\n";
     return list_studs.str();
@@ -232,15 +252,15 @@ std::string gradebook::student_list() const {
 std::string gradebook::assignment_list() const {
     std::stringstream list_asin;
     list_asin << "Assignments: ";
-    for (int i = 0; i < myAssignments.size(); i++) {
-        list_asin << myAssignments[i].getName() << ", ";
+    for (const auto &myAssignment : myAssignments) {
+        list_asin << myAssignment.getName() << ", ";
     }
     list_asin << "\n";
     return list_asin.str();
 }
 
 gradebook::~gradebook() {
-    for (int i = 0; i < myStudents.size(); ++i) {
-        delete myStudents[i];
+    for (const auto &myStudent : myStudents) {
+        delete myStudent;
     }
 }
